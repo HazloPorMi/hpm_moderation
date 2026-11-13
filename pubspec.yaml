@@ -1,6 +1,6 @@
 name: hpm_moderation
 description: Shared moderation package for HazloPorMi apps (report, block, content filter)
-version: 1.0.0
+version: 1.1.0
 
 environment:
   sdk: ">=3.0.0 <4.0.0"
@@ -9,7 +9,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  cloud_firestore: ">=5.0.0 <7.0.0"
+  cloud_firestore: ">=5.0.0 <8.0.0"
 
 dev_dependencies:
   flutter_test:
