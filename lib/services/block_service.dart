@@ -62,14 +62,12 @@ class BlockService {
   Future<void> blockUser({
     required String blockedUserId,
     String? blockedUserName,
-    String? reason,
   }) async {
     if (_currentUid == null) return;
 
     final block = BlockModel(
       blockedUserId: blockedUserId,
       blockedUserName: blockedUserName,
-      reason: reason,
       blockedAt: DateTime.now(),
     );
 
