@@ -13,6 +13,7 @@ Future<bool?> showReportDialog({
   required ReportType type,
   required ModerationStrings strings,
   String? messageId,
+  @visibleForTesting ReportService? service,
 }) {
   return showDialog<bool>(
     context: context,
@@ -22,6 +23,7 @@ Future<bool?> showReportDialog({
       type: type,
       messageId: messageId,
       strings: strings,
+      service: service ?? ReportService.instance,
     ),
   );
 }
@@ -32,6 +34,7 @@ class _ReportDialogContent extends StatefulWidget {
   final ReportType type;
   final String? messageId;
   final ModerationStrings strings;
+  final ReportService service;
 
   const _ReportDialogContent({
     required this.reporterId,
@@ -39,6 +42,7 @@ class _ReportDialogContent extends StatefulWidget {
     required this.type,
     this.messageId,
     required this.strings,
+    required this.service,
   });
 
   @override
@@ -136,23 +140,9 @@ class _ReportDialogContentState extends State<_ReportDialogContent> {
     final s = widget.strings;
 
     try {
-      final alreadyReported = await ReportService.instance.hasAlreadyReported(
-        reporterId: widget.reporterId,
-        reportedUserId: widget.reportedUserId,
-        messageId: widget.messageId,
-      );
-
-      if (alreadyReported) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(s.alreadyReported)),
-          );
-          Navigator.of(context).pop(false);
-        }
-        return;
-      }
-
-      await ReportService.instance.submitReport(
+      // No read-before-write: the reporter cannot read reports. The
+      // deterministic id makes a repeat report a refused overwrite.
+      await widget.service.submitReport(
         reporterId: widget.reporterId,
         reportedUserId: widget.reportedUserId,
         messageId: widget.messageId,
@@ -168,12 +158,18 @@ class _ReportDialogContentState extends State<_ReportDialogContent> {
         Navigator.of(context).pop(true);
       }
     } catch (e) {
-      if (mounted) {
+      if (!mounted) return;
+      if (ReportService.isAlreadyReported(e)) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${s.error}: $e')),
+          SnackBar(content: Text(s.alreadyReported)),
         );
-        setState(() => _isSubmitting = false);
+        Navigator.of(context).pop(false);
+        return;
       }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${s.error}: $e')),
+      );
+      setState(() => _isSubmitting = false);
     }
   }
 }
